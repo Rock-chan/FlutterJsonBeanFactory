@@ -18,22 +18,23 @@ class HelperFileGeneratorInfo(
 class HelperClassGeneratorInfo {
     //协助的类名
     lateinit var className: String
-    val fields: MutableList<Filed> = mutableListOf()
+    private val fields: MutableList<Filed> = mutableListOf()
 
 
-    fun addFiled(type: String, name: String, isLate: Boolean, annotationValue: List<AnnotationValue>?) {
+    fun addFiled(type: String, name: String, isEnum: Boolean, isLate: Boolean, annotationValue: List<AnnotationValue>?) {
         //如果是?结尾是可空类型
         fields.add(
             Filed(
                 if (type.endsWith("?")) type.take(type.length - 1) else type,
                 name,
+                // todo 1 isEnum
+                isEnum,
                 isLate,
                 type.endsWith("?")
             ).apply {
                 this.annotationValue = annotationValue
             })
     }
-
 
     override fun toString(): String {
         val sb = StringBuffer()
@@ -91,13 +92,26 @@ class HelperClassGeneratorInfo {
                 )
             }
 
-        } else {
-            stringBuilder.append("final ${type}? $classFieldName = jsonConvert.convert<${type}>(json['${getJsonName}']);\n")
         }
-        stringBuilder.append("\tif (${classFieldName} != null) {\n")
-        stringBuilder.append("\t\t${classInstanceName}.$classFieldName = $classFieldName;")
-        stringBuilder.append("\n")
-        stringBuilder.append("\t}")
+        // todo 4
+        else if(filed.isEnum) {
+            stringBuilder.append("final ${type}? $classFieldName = jsonConvert.convert<${type}>(json['${getJsonName}']);\n")
+            stringBuilder.append("\tif (${classFieldName} != null) {\n")
+            stringBuilder.append("\t\t${classInstanceName}.$classFieldName = $classFieldName;")
+            stringBuilder.append("\n")
+            stringBuilder.append("\t}")
+        }
+        else {
+            stringBuilder.append("final ${type}? $classFieldName = jsonConvert.convert<${type}>(json['${getJsonName}']);\n")
+            stringBuilder.append("\tif (${classFieldName} != null) {\n")
+            stringBuilder.append("\t\t${classInstanceName}.$classFieldName = $classFieldName;")
+            stringBuilder.append("\n")
+            stringBuilder.append("\t}")
+        }
+//        stringBuilder.append("\tif (${classFieldName} != null) {\n")
+//        stringBuilder.append("\t\t${classInstanceName}.$classFieldName = $classFieldName;")
+//        stringBuilder.append("\n")
+//        stringBuilder.append("\t}")
         return stringBuilder.toString()
     }
 
@@ -112,10 +126,9 @@ class HelperClassGeneratorInfo {
                 sb.append("\t${toJsonExpression(k)}\n")
             }
         }
-        sb.append("\treturn data;\n");
-        sb.append("}");
+        sb.append("\treturn data;\n")
+        sb.append("}")
         return sb.toString()
-
     }
 
     private fun toJsonExpression(filed: Filed): String {
@@ -160,6 +173,10 @@ class HelperClassGeneratorInfo {
             isMapType(type) || isSetType(type) -> {
                 return "data['$getJsonName'] = $thisKey;"
             }
+            // todo 3 filed.isEnum
+            filed.isEnum -> {
+                return "data['$getJsonName'] = ${thisKey};"
+            }
             // class
             else -> {
                 return "data['$getJsonName'] = ${thisKey}${canNullSymbol(filed.isCanNull)}toJson();"
@@ -178,10 +195,13 @@ class Filed constructor(
     var type: String,
     //字段名字
     var name: String,
+    // 是否枚举
+    var isEnum: Boolean,
     //是否是late修饰
     var isLate: Boolean,
     //是否是可空类型
-    var isCanNull: Boolean,
+    var isCanNull: Boolean
+
 ) {
 
     //待定

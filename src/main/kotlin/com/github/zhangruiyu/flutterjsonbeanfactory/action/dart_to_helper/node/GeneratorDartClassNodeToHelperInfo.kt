@@ -7,18 +7,36 @@ import com.jetbrains.lang.dart.DartTokenTypes
 import org.jetbrains.kotlin.psi.psiUtil.children
 
 object GeneratorDartClassNodeToHelperInfo {
-    val notSupportType = listOf("static", "const")
+    private val notSupportType = listOf("static", "const")
+    // todo enums
+    private val enums: MutableSet<String> = mutableSetOf()
     fun getDartFileHelperClassGeneratorInfo(file: PsiFile): HelperFileGeneratorInfo? {
+        // todo 6 is Enum
+
         //不包含JsonConvert 那么就不转
         return if (file.text.contains("@JsonSerializable") && file.name != "json_convert_content.dart") {
             val mutableMapOf = mutableListOf<HelperClassGeneratorInfo>()
             val imports: MutableList<String> = mutableListOf()
+            var isEnum = false;
             file.children.forEach {
                 val text = it.text
                 val classNode = it?.node
+                // 是enum
+                if (classNode?.elementType == DartTokenTypes.ENUM_DEFINITION) {
+                    if (classNode is CompositeElement) {
+                        for (filedAndMethodNode in classNode.children()) {
+                            if (filedAndMethodNode.elementType == DartTokenTypes.COMPONENT_NAME) {
+                                println("发现枚举 ${filedAndMethodNode.text}")
+                                enums.add(filedAndMethodNode.text)
+                                isEnum = true;
+                            }
+                        }
+                    }
+                }
                 //是类
-                val isJsonSerializable = text.contains("@JsonSerializable")
-                if (classNode?.elementType == DartTokenTypes.CLASS_DEFINITION && isJsonSerializable
+//                val isJsonSerializable = text.contains("@JsonSerializable")
+                // todo 5 else if
+                else if (classNode?.elementType == DartTokenTypes.CLASS_DEFINITION && text.contains("@JsonSerializable")
                 ) {
                     if (classNode is CompositeElement) {
                         val helperClassGeneratorInfo = HelperClassGeneratorInfo()
@@ -34,6 +52,8 @@ object GeneratorDartClassNodeToHelperInfo {
                                             var typeNode: String? = null
                                             var isLate = false
                                             var isStatic = false
+//                                            var isEnum = false;
+                                            isEnum = false;
                                             //当前字段的所有注解
                                             val allAnnotation = mutableListOf<AnnotationValue>()
                                             itemFileNode.firstChildNode.children().forEach lit@{ fieldWholeNode ->
@@ -137,11 +157,17 @@ object GeneratorDartClassNodeToHelperInfo {
                                                         fieldWholeNode.elementType == DartTokenTypes.TYPE || isVar -> {
                                                             typeNode = fieldWholeNode.text
                                                         }
+                                                        // todo ------------------------------
                                                         fieldWholeNode.elementType == DartTokenTypes.COMPONENT_NAME -> {
                                                             nameNode = fieldWholeNode.text
                                                         }
+
                                                         //  println("普通解析类型 ${itemFieldNode.elementType}")
                                                         //  println("普通解析类型文本 ${itemFieldNode.text}")
+                                                    }
+//                                                    // todo enum
+                                                    if (enums.contains(fieldWholeNode.text.replace("?", ""))) {
+                                                        isEnum = true
                                                     }
                                                     if (fieldWholeNode.elementType is DartElementType) {
                                                         if (notSupportType.contains(fieldWholeNode.text)) {
@@ -154,6 +180,7 @@ object GeneratorDartClassNodeToHelperInfo {
                                                 }
 
                                             }
+
                                             //如果不是late,但是最后一行包括=号,说明默认赋值了
                                             if (!isLate && itemFileNode.lastChildNode.text.contains("=")) {
                                                 isLate = true
@@ -162,6 +189,8 @@ object GeneratorDartClassNodeToHelperInfo {
                                                 helperClassGeneratorInfo.addFiled(
                                                     typeNode!!,
                                                     nameNode!!,
+                                                    // 添加isCanNull
+                                                    isEnum,
                                                     isLate,
                                                     allAnnotation
                                                 )
@@ -173,7 +202,8 @@ object GeneratorDartClassNodeToHelperInfo {
 //                                val text2 = itemFile.text
 //                                val text3 = itemFile.text
                                 }
-                            } else if (filedAndMethodNode.elementType == DartTokenTypes.COMPONENT_NAME) {
+                            }
+                            else if (filedAndMethodNode.elementType == DartTokenTypes.COMPONENT_NAME) {
                                 helperClassGeneratorInfo.className = (nodeName)
                             } /*else if (filedAndMethodNode.elementType == DartTokenTypes.MIXINS) {
                                 //不包含JsonConvert 那么就不转
@@ -188,7 +218,8 @@ object GeneratorDartClassNodeToHelperInfo {
 //                        val text1 = filedAndMethodNode.text
 //                    }
                     }
-                } else if (classNode?.elementType == DartTokenTypes.IMPORT_STATEMENT) {
+                }
+                else if (classNode?.elementType == DartTokenTypes.IMPORT_STATEMENT) {
                     imports.add(text)
                 }
 
