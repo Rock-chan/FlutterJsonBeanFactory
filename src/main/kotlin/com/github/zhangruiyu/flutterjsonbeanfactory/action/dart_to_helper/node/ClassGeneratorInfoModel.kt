@@ -15,11 +15,17 @@ class HelperFileGeneratorInfo(
     val classes: MutableList<HelperClassGeneratorInfo> = mutableListOf()
 )
 
+var enums: MutableSet<String> = mutableSetOf()
 class HelperClassGeneratorInfo {
     //协助的类名
     lateinit var className: String
     private val fields: MutableList<Filed> = mutableListOf()
 
+
+    // todo 获取到enums列表
+    fun getEnumType(enum: MutableSet<String>) {
+        enums = enum
+    }
 
     fun addFiled(type: String, name: String, isEnum: Boolean, isLate: Boolean, annotationValue: List<AnnotationValue>?) {
         //如果是?结尾是可空类型
@@ -36,7 +42,17 @@ class HelperClassGeneratorInfo {
             })
     }
 
+    // todo 判断fields是否为enum，是则将enum设置为true
+    fun testtest() {
+        fields.forEach {
+            if(enums.contains(it.type.replace("?", ""))){
+                it.isEnum = true;
+            }
+        }
+    }
+
     override fun toString(): String {
+        testtest()
         val sb = StringBuffer()
         sb.append(jsonParseFunc())
         sb.append("\n")

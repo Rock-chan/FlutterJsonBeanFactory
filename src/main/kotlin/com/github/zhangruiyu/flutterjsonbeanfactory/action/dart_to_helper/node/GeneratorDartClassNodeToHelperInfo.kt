@@ -10,32 +10,31 @@ object GeneratorDartClassNodeToHelperInfo {
     private val notSupportType = listOf("static", "const")
     // todo enums
     private val enums: MutableSet<String> = mutableSetOf()
+
     fun getDartFileHelperClassGeneratorInfo(file: PsiFile): HelperFileGeneratorInfo? {
-        // todo 6 is Enum
 
         //不包含JsonConvert 那么就不转
         return if (file.text.contains("@JsonSerializable") && file.name != "json_convert_content.dart") {
             val mutableMapOf = mutableListOf<HelperClassGeneratorInfo>()
             val imports: MutableList<String> = mutableListOf()
-            var isEnum = false;
             file.children.forEach {
                 val text = it.text
                 val classNode = it?.node
                 // 是enum
                 if (classNode?.elementType == DartTokenTypes.ENUM_DEFINITION) {
+                    val helperClassGeneratorInfo = HelperClassGeneratorInfo()
                     if (classNode is CompositeElement) {
                         for (filedAndMethodNode in classNode.children()) {
                             if (filedAndMethodNode.elementType == DartTokenTypes.COMPONENT_NAME) {
                                 println("发现枚举 ${filedAndMethodNode.text}")
                                 enums.add(filedAndMethodNode.text)
-                                isEnum = true;
+                                helperClassGeneratorInfo.getEnumType(enums)
                             }
                         }
                     }
                 }
                 //是类
 //                val isJsonSerializable = text.contains("@JsonSerializable")
-                // todo 5 else if
                 else if (classNode?.elementType == DartTokenTypes.CLASS_DEFINITION && text.contains("@JsonSerializable")
                 ) {
                     if (classNode is CompositeElement) {
@@ -52,8 +51,7 @@ object GeneratorDartClassNodeToHelperInfo {
                                             var typeNode: String? = null
                                             var isLate = false
                                             var isStatic = false
-//                                            var isEnum = false;
-                                            isEnum = false;
+                                            var isEnum = false;
                                             //当前字段的所有注解
                                             val allAnnotation = mutableListOf<AnnotationValue>()
                                             itemFileNode.firstChildNode.children().forEach lit@{ fieldWholeNode ->
