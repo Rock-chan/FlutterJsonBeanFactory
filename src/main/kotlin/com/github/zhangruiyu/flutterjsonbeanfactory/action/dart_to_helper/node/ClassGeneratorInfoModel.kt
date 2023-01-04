@@ -2,7 +2,6 @@ package com.github.zhangruiyu.flutterjsonbeanfactory.action.dart_to_helper.node
 
 import com.github.zhangruiyu.flutterjsonbeanfactory.action.jsontodart.utils.*
 import com.github.zhangruiyu.flutterjsonbeanfactory.utils.toLowerCaseFirstOne
-import com.intellij.openapi.vfs.VirtualFile
 
 
 /**
@@ -12,28 +11,34 @@ import com.intellij.openapi.vfs.VirtualFile
  */
 class HelperFileGeneratorInfo(
     val imports: MutableList<String> = mutableListOf(),
-    val classes: MutableList<HelperClassGeneratorInfo> = mutableListOf()
+    val classes: MutableList<HelperClassGeneratorInfo> = mutableListOf(),
 )
 
 var enums: MutableSet<String> = mutableSetOf()
+
 class HelperClassGeneratorInfo {
     //协助的类名
     lateinit var className: String
     private val fields: MutableList<Filed> = mutableListOf()
 
-
-    // todo 获取到enums列表
+    // enum change 2023/1/4 rock
     fun getEnumType(enum: MutableSet<String>) {
         enums = enum
     }
 
-    fun addFiled(type: String, name: String, isEnum: Boolean, isLate: Boolean, annotationValue: List<AnnotationValue>?) {
+    fun addFiled(
+        type: String,
+        name: String,
+        isEnum: Boolean,
+        isLate: Boolean,
+        annotationValue: List<AnnotationValue>?
+    ) {
         //如果是?结尾是可空类型
         fields.add(
             Filed(
                 if (type.endsWith("?")) type.take(type.length - 1) else type,
                 name,
-                // todo 1 isEnum
+                // enum change 2023/1/4
                 isEnum,
                 isLate,
                 type.endsWith("?")
@@ -42,17 +47,19 @@ class HelperClassGeneratorInfo {
             })
     }
 
-    // todo 判断fields是否为enum，是则将enum设置为true
-    fun testtest() {
+    // enum change 2023/1/4 rock
+    private fun isEnumOrNot() {
         fields.forEach {
-            if(enums.contains(it.type.replace("?", ""))){
+            var type = it.type.replace("?", "");
+            if (enums.contains(type)) {
                 it.isEnum = true;
             }
         }
     }
 
     override fun toString(): String {
-        testtest()
+        // 先对entity内部的field进行判断是否为enum
+        isEnumOrNot()
         val sb = StringBuffer()
         sb.append(jsonParseFunc())
         sb.append("\n")
@@ -109,25 +116,21 @@ class HelperClassGeneratorInfo {
             }
 
         }
-        // todo 4
-        else if(filed.isEnum) {
+        // enum change 2023/1/4
+        else if (filed.isEnum) {
+            stringBuilder.append("if(json['${getJsonName}'] != null) {")
+            stringBuilder.append("\n")
+            stringBuilder.append("\t\t${classInstanceName}.$classFieldName = ${filed.type}.fromJson(json['${getJsonName}'].toString());")
+            stringBuilder.append("\n")
+            stringBuilder.append("\t}")
+            stringBuilder.append("\n")
+        } else {
             stringBuilder.append("final ${type}? $classFieldName = jsonConvert.convert<${type}>(json['${getJsonName}']);\n")
             stringBuilder.append("\tif (${classFieldName} != null) {\n")
             stringBuilder.append("\t\t${classInstanceName}.$classFieldName = $classFieldName;")
             stringBuilder.append("\n")
             stringBuilder.append("\t}")
         }
-        else {
-            stringBuilder.append("final ${type}? $classFieldName = jsonConvert.convert<${type}>(json['${getJsonName}']);\n")
-            stringBuilder.append("\tif (${classFieldName} != null) {\n")
-            stringBuilder.append("\t\t${classInstanceName}.$classFieldName = $classFieldName;")
-            stringBuilder.append("\n")
-            stringBuilder.append("\t}")
-        }
-//        stringBuilder.append("\tif (${classFieldName} != null) {\n")
-//        stringBuilder.append("\t\t${classInstanceName}.$classFieldName = $classFieldName;")
-//        stringBuilder.append("\n")
-//        stringBuilder.append("\t}")
         return stringBuilder.toString()
     }
 
@@ -189,7 +192,7 @@ class HelperClassGeneratorInfo {
             isMapType(type) || isSetType(type) -> {
                 return "data['$getJsonName'] = $thisKey;"
             }
-            // todo 3 filed.isEnum
+            // enum change 2023/1/4
             filed.isEnum -> {
                 return "data['$getJsonName'] = ${thisKey};"
             }
@@ -212,6 +215,7 @@ class Filed constructor(
     //字段名字
     var name: String,
     // 是否枚举
+    // enum change 2023/1/4
     var isEnum: Boolean,
     //是否是late修饰
     var isLate: Boolean,

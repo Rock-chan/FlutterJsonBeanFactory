@@ -20,7 +20,7 @@ object GeneratorDartClassNodeToHelperInfo {
             file.children.forEach {
                 val text = it.text
                 val classNode = it?.node
-                // 是enum
+                // enum change 2023/1/4
                 if (classNode?.elementType == DartTokenTypes.ENUM_DEFINITION) {
                     val helperClassGeneratorInfo = HelperClassGeneratorInfo()
                     if (classNode is CompositeElement) {
@@ -35,7 +35,8 @@ object GeneratorDartClassNodeToHelperInfo {
                 }
                 //是类
 //                val isJsonSerializable = text.contains("@JsonSerializable")
-                else if (classNode?.elementType == DartTokenTypes.CLASS_DEFINITION && text.contains("@JsonSerializable")
+//                else
+                    if (classNode?.elementType == DartTokenTypes.CLASS_DEFINITION && text.contains("@JsonSerializable")
                 ) {
                     if (classNode is CompositeElement) {
                         val helperClassGeneratorInfo = HelperClassGeneratorInfo()
@@ -163,10 +164,10 @@ object GeneratorDartClassNodeToHelperInfo {
                                                         //  println("普通解析类型 ${itemFieldNode.elementType}")
                                                         //  println("普通解析类型文本 ${itemFieldNode.text}")
                                                     }
-//                                                    // todo enum
-                                                    if (enums.contains(fieldWholeNode.text.replace("?", ""))) {
-                                                        isEnum = true
-                                                    }
+//                                                  // enum change
+//                                                    if (enums.contains(fieldWholeNode.text.replace("?", ""))) {
+//                                                        isEnum = true
+//                                                    }
                                                     if (fieldWholeNode.elementType is DartElementType) {
                                                         if (notSupportType.contains(fieldWholeNode.text)) {
                                                             val errorMessage =
@@ -187,7 +188,7 @@ object GeneratorDartClassNodeToHelperInfo {
                                                 helperClassGeneratorInfo.addFiled(
                                                     typeNode!!,
                                                     nameNode!!,
-                                                    // 添加isCanNull
+                                                    // enum change
                                                     isEnum,
                                                     isLate,
                                                     allAnnotation
@@ -226,6 +227,7 @@ object GeneratorDartClassNodeToHelperInfo {
                  val toString33 = it?.lastChildNode?.toString()
             }*/
             }
+
             if (mutableMapOf.isEmpty()) null else HelperFileGeneratorInfo(imports, mutableMapOf)
         } else null
     }
