@@ -95,6 +95,7 @@ class HelperClassGeneratorInfo {
         //是否是list
         val isListType = isListType(type)
         val stringBuilder = StringBuilder()
+        // List change 2023.01.09 rock
         if (isListType) {
             //如果泛型里带null
             if (getListSubTypeCanNull(type).endsWith("?")) {
@@ -105,6 +106,10 @@ class HelperClassGeneratorInfo {
                         )
                     }>(json['${getJsonName}']);\n"
                 )
+                stringBuilder.append("\tif (${classFieldName} != null) {\n")
+                stringBuilder.append("\t\t${classInstanceName}.$classFieldName = $classFieldName;")
+                stringBuilder.append("\n")
+                stringBuilder.append("\t}")
             } else {
                 stringBuilder.append(
                     "final List<${getListSubType(type)}>? $classFieldName = jsonConvert.convertListNotNull<${
@@ -113,6 +118,10 @@ class HelperClassGeneratorInfo {
                         )
                     }>(json['${getJsonName}']);\n"
                 )
+                stringBuilder.append("\tif (${classFieldName} != null) {\n")
+                stringBuilder.append("\t\t${classInstanceName}.$classFieldName = $classFieldName;")
+                stringBuilder.append("\n")
+                stringBuilder.append("\t}")
             }
 
         }

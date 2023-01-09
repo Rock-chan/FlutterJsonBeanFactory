@@ -12,7 +12,6 @@ object GeneratorDartClassNodeToHelperInfo {
     private val enums: MutableSet<String> = mutableSetOf()
 
     fun getDartFileHelperClassGeneratorInfo(file: PsiFile): HelperFileGeneratorInfo? {
-
         //不包含JsonConvert 那么就不转
         return if (file.text.contains("@JsonSerializable") && file.name != "json_convert_content.dart") {
             val mutableMapOf = mutableListOf<HelperClassGeneratorInfo>()

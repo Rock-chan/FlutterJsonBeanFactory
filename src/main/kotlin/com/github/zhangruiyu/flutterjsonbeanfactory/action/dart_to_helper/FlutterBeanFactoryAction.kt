@@ -126,8 +126,12 @@ class FlutterBeanFactoryAction : AnAction() {
                                     "  }"
                         )
                         content.append("\n\n")
+                        // enum change 2023.01.09 rock
                         content.append(
                             "  T? asT<T extends Object?>(dynamic value) {\n" +
+                                    "    if (value == null) {\n" +
+                                    "      return null;\n" +
+                                    "    }\n" +
                                     "    if (value is T) {\n" +
                                     "      return value;\n" +
                                     "    }\n" +
